@@ -10,8 +10,8 @@
       "name": "template",
       "hidden": true,
       "cacheVariables": {
-        "ENABLE_FRONTEND_API": false,
-        "ENABLE_QT": false
+        "ENABLE_FRONTEND_API": true,
+        "ENABLE_QT": true
       }
     },
     {
@@ -28,9 +28,7 @@
       "generator": "Xcode",
       "warnings": {"dev": true, "deprecated": true},
       "cacheVariables": {
-        "CMAKE_OSX_DEPLOYMENT_TARGET": "11.0",
-        "CODESIGN_IDENTITY": "$penv{CODESIGN_IDENT}",
-        "CODESIGN_TEAM": "$penv{CODESIGN_TEAM}"
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "11.0"
       }
     },
     {
@@ -58,7 +56,7 @@
       "architecture": "x64",
       "warnings": {"dev": true, "deprecated": true},
       "cacheVariables": {
-        "CMAKE_SYSTEM_VERSION": "10.0.18363.657"
+        "CMAKE_SYSTEM_VERSION": "10.0.20348.0"
       }
     },
     {
