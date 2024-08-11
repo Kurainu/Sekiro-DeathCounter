@@ -33,6 +33,6 @@ if(ENABLE_QT)
                AUTORCC ON)
 endif()
 
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/plugin-main.cpp src/deathcounter.cpp src/deathcounter.hpp src/deathcounter.ui)
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/plugin-main.cpp src/deathcounter.cpp src/deathcounter.hpp src/deathcounter.ui src/obseventhandler.hpp src/obseventhandler.cpp src/obsevent.hpp  src/utils.cpp src/utils.hpp src/removedevent.hpp src/renamedevent.hpp src/createdevent.hpp)
 
 set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})

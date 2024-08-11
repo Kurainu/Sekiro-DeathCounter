@@ -21,12 +21,13 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 #include <plugin-support.h>
 #include <deathcounter.hpp>
 #include <QMainWindow>
+#include <obseventhandler.hpp>
 
 OBS_DECLARE_MODULE()
 OBS_MODULE_USE_DEFAULT_LOCALE(PLUGIN_NAME, "en-US")
 
 DeathCounter *_deathcounter = nullptr;
-
+obseventhandler *_obseventhandler = nullptr;
 
 bool obs_module_load(void)
 {
@@ -35,7 +36,10 @@ bool obs_module_load(void)
 	obs_frontend_push_ui_translation(obs_module_get_string);
 	const auto main_window = static_cast<QMainWindow *>(obs_frontend_get_main_window());
 	obs_frontend_pop_ui_translation();
+	
 	_deathcounter = new DeathCounter(main_window);
+	_obseventhandler = new obseventhandler(_deathcounter);
+
 	const auto menu_cb = [] {
 		if (!_deathcounter->isVisible())
 			_deathcounter->setVisible(true);
@@ -43,6 +47,10 @@ bool obs_module_load(void)
 			_deathcounter->setVisible(false);
 	};
 
+	QAction::connect(_obseventhandler, &obseventhandler::OnCreateEvent, _deathcounter, &DeathCounter::AddSources);
+	QAction::connect(_obseventhandler, &obseventhandler::OnRemoveEvent, _deathcounter, &DeathCounter::RemoveSource);
+	QAction::connect(_obseventhandler, &obseventhandler::OnRenameEvent, _deathcounter, &DeathCounter::RenameSources);
+	QAction::connect(_obseventhandler, &obseventhandler::FrontendExit, _deathcounter, &DeathCounter::OBSFrontendExit);
 	QAction::connect(menu_action, &QAction::triggered, menu_cb);	
 	return true;
 }

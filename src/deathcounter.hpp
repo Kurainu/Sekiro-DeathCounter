@@ -2,21 +2,29 @@
 #ifndef DEATHCOUNTER_HPP
 #define DEATHCOUNTER_HPP
 
-#include <QtWidgets/QWidget>
+#include <QtWidgets/QMainWindow>
 #include "ui_deathcounter.h"
 #include <QTimer>
 #include <windows.h>
 #include <tlhelp32.h>
 #include <Psapi.h>
-#include "obs.h"
+#include "obs.hpp"
 #include "plugin-support.h"
+#include <obsevent.hpp>
+#include "createdevent.hpp"
+#include "renamedevent.hpp"
+#include "removedevent.hpp"
 
 #define binfo(format, ...) obs_log(LOG_INFO, format, ##__VA_ARGS__)
 #define bwarning(format, ...) obs_log(LOG_WARNING, format, ##__VA_ARGS__)
 #define berror(format, ...) obs_log(LOG_ERROR, format, ##__VA_ARGS__)
 #define bdebug(format, ...) obs_log(LOG_DEBUG, "DEBUG: " format, ##__VA_ARGS__)
 
-class DeathCounter : public QWidget
+QT_BEGIN_NAMESPACE
+namespace Ui {class DeathCounterClass;};
+QT_END_NAMESPACE
+
+class DeathCounter : public QMainWindow
 {
     Q_OBJECT
 public:
@@ -25,16 +33,23 @@ public:
     void SetProcessHandle(HANDLE handle);
 
 private:
-    Ui::DeathCounterClass ui;
+    Ui::DeathCounterClass* ui;
     QTimer* timer;
     HANDLE SekiroProc;
     HANDLE ProcSnapshot;
     HANDLE WaitHandle;
     DWORD64 OffsetPointer;
     DWORD DeathCount;
+    bool ShouldStop = false;
     void Timertick();
 
-signals:
+    void SetSourceProperty(QString string, QString property, QString value);
+
+public slots:
+    void AddSources(CreatedEvent data);
+    void RemoveSource(RemovedEvent data);
+    void RenameSources(RenamedEvent data);
+    void OBSFrontendExit();
 };
 
 #endif // DEATHCOUNTER_HPP

@@ -2,13 +2,16 @@
 #include "qeventloop.h"
 #include <QDebug>
 #include <QDateTime>
+#include "utils.hpp"
+
 
 static QString SEKIRO_PROCESSNAME = "sekiro.exe";
 
-DeathCounter::DeathCounter(QWidget *parent) : QWidget(parent)
+DeathCounter::DeathCounter(QWidget *parent): QMainWindow(parent), ui(new Ui::DeathCounterClass())
 {
-	ui.setupUi(this);
+	ui->setupUi(this);
 
+    ShouldStop = false;
     timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &DeathCounter::Timertick);
     timer->start(5000);
@@ -21,7 +24,9 @@ DeathCounter::DeathCounter(QWidget *parent) : QWidget(parent)
 }
 
 DeathCounter::~DeathCounter() 
-{}
+{
+	SetProcessHandle(NULL);
+}
 
 void DeathCounter::SetProcessHandle(HANDLE handle)
 {
@@ -31,9 +36,7 @@ void DeathCounter::SetProcessHandle(HANDLE handle)
     OffsetPointer = NULL;
 }
 
-void CALLBACK WaitOrTimerCallback(
-    _In_  PVOID lpParameter,
-    _In_  BOOLEAN TimerOrWaitFired)
+void CALLBACK WaitOrTimerCallback(_In_  PVOID lpParameter, _In_  BOOLEAN TimerOrWaitFired)
 {
     Q_UNUSED(TimerOrWaitFired);
     DeathCounter *deathcounter = reinterpret_cast<DeathCounter*>(lpParameter);
@@ -61,6 +64,13 @@ DWORD64 GetBaseAddress(HANDLE hProcess) {
 }
 
 void DeathCounter::Timertick(){
+
+    if (ShouldStop == true) {
+		timer->stop();
+	    SetProcessHandle(NULL);
+	    return;
+	}
+
     if (SekiroProc != NULL) {
         DWORD64 DeathPointer = 0;
         if(!ReadProcessMemory(SekiroProc, (PBYTE*)OffsetPointer, &DeathPointer, sizeof(DWORD64), 0)) {
@@ -72,7 +82,9 @@ void DeathCounter::Timertick(){
         if (DeathPointer != 0x90) {
             ReadProcessMemory(SekiroProc, (PBYTE*)DeathPointer, &DeathCount, sizeof(DeathCount), 0);
             qInfo() << QTime::currentTime() << ": " << DeathCount;
-	        binfo("DeathCount: %d", DeathCount);
+	        QString id = ui->combo_obs_tex_source->itemData(ui->combo_obs_tex_source->currentIndex(),Qt::UserRole).value<QString>();
+
+	        SetSourceProperty(id, "text", QString::number(DeathCount));
         }
     }else {
 
@@ -101,4 +113,39 @@ void DeathCounter::Timertick(){
     }
 }
 
+void DeathCounter::AddSources(CreatedEvent data)
+{
+	binfo("AddSource: %s - %d", data.SourceName.toStdString().c_str(), data.eventtype);
+	ui->combo_obs_tex_source->addItem(data.SourceName,data.id);
+}
 
+void DeathCounter::RemoveSource(RemovedEvent data)
+{
+	int index = ui->combo_obs_tex_source->findText(data.SourceName, Qt::MatchContains);
+	binfo("[DeathCounter::Remove Source]: %s", data.id.toStdString().c_str());
+	ui->combo_obs_tex_source->removeItem(index);
+}
+
+void DeathCounter::RenameSources(RenamedEvent data)
+{
+	int index = ui->combo_obs_tex_source->findText(data.prev_name, Qt::MatchContains);
+
+	binfo("[DeathCounter::Renamed Source]: %d", index);
+
+	ui->combo_obs_tex_source->setItemText(index, ui->combo_obs_tex_source->itemText(index).replace(data.prev_name, data.new_name));
+}
+
+void DeathCounter::OBSFrontendExit() {
+	ShouldStop = true;
+}
+
+void DeathCounter::SetSourceProperty(QString string, QString property, QString value)
+{
+	OBSSourceAutoRelease obs_source = obs_get_source_by_uuid(string.toStdString().c_str());
+	if (!obs_source) { return; }
+    if (obs_source_removed(obs_source)) {return;}
+	    
+    OBSDataAutoRelease source_data = obs_source_get_settings(obs_source);
+	obs_data_set_string(source_data, property.toStdString().c_str(), value.toStdString().c_str());
+	obs_source_update(obs_source, source_data);
+}
