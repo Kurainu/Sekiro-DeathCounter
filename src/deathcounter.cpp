@@ -80,13 +80,18 @@ void DeathCounter::Timertick(){
         DeathPointer += 0x90; // DeathPointer that points to the actual SaveGame DeathCount
 
         if (DeathPointer != 0x90) {
+		    ui->label_sekiro_process_found->setText("Process Found");
+		    ui->label_sekiro_process_found->setStyleSheet("color: green;");
+
             ReadProcessMemory(SekiroProc, (PBYTE*)DeathPointer, &DeathCount, sizeof(DeathCount), 0);
             qInfo() << QTime::currentTime() << ": " << DeathCount;
 	        QString id = ui->combo_obs_tex_source->itemData(ui->combo_obs_tex_source->currentIndex(),Qt::UserRole).value<QString>();
-
 	        SetSourceProperty(id, "text", QString::number(DeathCount));
         }
     }else {
+
+        ui->label_sekiro_process_found->setText("Process not Found");
+	    ui->label_sekiro_process_found->setStyleSheet("color: red;");
 
        ProcSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 

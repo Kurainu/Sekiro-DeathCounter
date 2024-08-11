@@ -35,9 +35,9 @@
          <enum>QLayout::SetMinimumSize</enum>
         </property>
         <item>
-         <widget class="QLabel" name="label_sekiro_process_found">
+         <widget class="QLabel" name="ro_label_sekiroprocess">
           <property name="text">
-           <string>Sekiro Process Found:</string>
+           <string> Process Found?:</string>
           </property>
           <property name="textFormat">
            <enum>Qt::PlainText</enum>
@@ -45,7 +45,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="ro_label_sekiroprocess">
+         <widget class="QLabel" name="label_sekiro_process_found">
           <property name="styleSheet">
            <string notr="true">color: rgb(255, 0, 0);</string>
           </property>
