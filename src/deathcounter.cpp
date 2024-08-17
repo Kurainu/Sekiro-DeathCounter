@@ -197,7 +197,7 @@ void DeathCounter::closeEvent(QCloseEvent *event) {
 	};
 
     QMessageBox::StandardButton resBtn = QMessageBox::question(
-		this, "Settings Changed", "You dont want to Save your Changes?",
+		this, "Settings Changed", "You have some unsaved Changes. You want to Changes?",
 		QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,
 		QMessageBox::Yes);
 

@@ -33,10 +33,10 @@
   },
   "platformConfig": {
     "macos": {
-      "bundleId": "com.kurainu.deathcounter_sekiro"
+      "bundleId": "com.kurainu.sekiro_deathcounter"
     }
   },
-  "name": "deathcountersekiro",
+  "name": "sekirodeathcounter",
   "displayName": "Sekiro DeathCounter",
   "version": "1.0.0",
   "author": "Kurainu",
