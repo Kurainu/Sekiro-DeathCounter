@@ -22,6 +22,9 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 #include <deathcounter.hpp>
 #include <QMainWindow>
 #include <obseventhandler.hpp>
+#include <QDir>
+#include <QFile>
+#include <utils.hpp>
 
 OBS_DECLARE_MODULE()
 OBS_MODULE_USE_DEFAULT_LOCALE(PLUGIN_NAME, "en-US")
@@ -40,12 +43,32 @@ bool obs_module_load(void)
 	_deathcounter = new DeathCounter(main_window);
 	_obseventhandler = new obseventhandler(_deathcounter);
 
+	auto configdirectory = obs_module_config_path("");
+	if (!QDir(configdirectory).exists()) {
+		QDir().mkdir(configdirectory);
+		QFile file(obs_module_config_path("config.json"));
+		file.open(QIODevice::WriteOnly);
+		file.close();
+		_deathcounter->SetData(obs_data_create());
+	} else {
+		_deathcounter->SetData(obs_data_create_from_json_file(obs_module_config_path("config.json")));
+		binfo("obs_data_create_from_json_file");
+	}
+
 	const auto menu_cb = [] {
-		if (!_deathcounter->isVisible())
+		if (!_deathcounter->isVisible()) {
 			_deathcounter->setVisible(true);
-		else
+			_deathcounter->SetSelectedScene();
+		} else {
 			_deathcounter->setVisible(false);
+		}
 	};
+
+
+
+
+	binfo("configdirectory: %s", configdirectory);
+	bfree(configdirectory);
 
 	QAction::connect(_obseventhandler, &obseventhandler::OnCreateEvent, _deathcounter, &DeathCounter::AddSources);
 	QAction::connect(_obseventhandler, &obseventhandler::OnRemoveEvent, _deathcounter, &DeathCounter::RemoveSource);

@@ -17,5 +17,6 @@ public:
 	static obs_source_t* GetSourceCallData(calldata_t* data);
 	static obs_scene_t *GetSceneCallData(calldata_t *data);
 	static obs_sceneitem_t *GetSceneitemCallData(calldata_t *data);
+	static char *GetConfigPath(const char*file);
 };
 

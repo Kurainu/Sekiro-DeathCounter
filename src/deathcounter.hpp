@@ -31,9 +31,12 @@ public:
     DeathCounter(QWidget *parent = nullptr);
     ~DeathCounter();
     void SetProcessHandle(HANDLE handle);
+    void SetData(obs_data_t *obsdata);
+    obs_data_t* GetData();
+    void SetSelectedScene();
 
 private:
-    Ui::DeathCounterClass* ui;
+    Ui::DeathCounterClass *ui;
     QTimer* timer;
     HANDLE SekiroProc;
     HANDLE ProcSnapshot;
@@ -41,9 +44,19 @@ private:
     DWORD64 OffsetPointer;
     DWORD DeathCount;
     bool ShouldStop = false;
+    OBSDataAutoRelease data;
     void Timertick();
+    void SaveSettings();
 
     void SetSourceProperty(QString string, QString property, QString value);
+
+
+protected:
+    virtual void closeEvent(QCloseEvent *event) override;
+
+private slots:
+    void Accepted();
+    void Rejected();
 
 public slots:
     void AddSources(CreatedEvent data);

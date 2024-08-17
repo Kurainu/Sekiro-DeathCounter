@@ -1,5 +1,6 @@
 #include "utils.hpp"
 #include "callback/calldata.h"
+#include <obs-module.h>
 
 obs_source_t* utils::GetSourceCallData(calldata_t* data)
 {
@@ -25,4 +26,11 @@ obs_sceneitem_t *utils::GetSceneitemCallData(calldata_t *data)
     calldata_get_ptr(data, "item", &ptr);
     obs_sceneitem_t *scene_item = static_cast<obs_sceneitem_t *>(ptr);
     return scene_item;
+}
+
+char* utils::GetConfigPath(const char *file)
+{
+	char* configdirectory = obs_module_config_path(file);
+
+    return configdirectory;
 }

@@ -3,7 +3,8 @@
 #include <QDebug>
 #include <QDateTime>
 #include "utils.hpp"
-
+#include <QCloseEvent>
+#include <QMessageBox>
 
 static QString SEKIRO_PROCESSNAME = "sekiro.exe";
 
@@ -11,9 +12,14 @@ DeathCounter::DeathCounter(QWidget *parent): QMainWindow(parent), ui(new Ui::Dea
 {
 	ui->setupUi(this);
 
+    binfo("DATA: %s", obs_data_get_json(data));
+
     ShouldStop = false;
     timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &DeathCounter::Timertick);
+    connect(ui->buttonBox, &QDialogButtonBox::accepted,this, &DeathCounter::Accepted);
+    connect(ui->buttonBox, &QDialogButtonBox::rejected,this, &DeathCounter::Rejected);
+
     timer->start(5000);
 
     SekiroProc = NULL;
@@ -34,6 +40,22 @@ void DeathCounter::SetProcessHandle(HANDLE handle)
     ProcSnapshot = NULL;
     WaitHandle = NULL;
     OffsetPointer = NULL;
+}
+
+void DeathCounter::SetData(obs_data_t *obsdata) {
+	data = obsdata;
+}
+
+obs_data_t *DeathCounter::GetData()
+{
+	return data;
+}
+
+void DeathCounter::SetSelectedScene()
+{
+	QString name = obs_data_get_string(data, "SelectedSource");
+	int index = ui->combo_obs_tex_source->findText(name, Qt::MatchExactly);
+	ui->combo_obs_tex_source->setCurrentIndex(index);
 }
 
 void CALLBACK WaitOrTimerCallback(_In_  PVOID lpParameter, _In_  BOOLEAN TimerOrWaitFired)
@@ -86,6 +108,7 @@ void DeathCounter::Timertick(){
             ReadProcessMemory(SekiroProc, (PBYTE*)DeathPointer, &DeathCount, sizeof(DeathCount), 0);
             qInfo() << QTime::currentTime() << ": " << DeathCount;
 	        QString id = ui->combo_obs_tex_source->itemData(ui->combo_obs_tex_source->currentIndex(),Qt::UserRole).value<QString>();
+
 	        SetSourceProperty(id, "text", QString::number(DeathCount));
         }
     }else {
@@ -118,16 +141,24 @@ void DeathCounter::Timertick(){
     }
 }
 
+void DeathCounter::SaveSettings()
+{
+	QString itemtext = ui->combo_obs_tex_source->itemText(ui->combo_obs_tex_source->currentIndex());
+
+	obs_data_set_string(data, "SelectedSource",itemtext.toStdString().c_str());
+	char *configpath = utils::GetConfigPath("config.json");
+	bool test = obs_data_save_json(data, configpath);
+	bfree(configpath);
+}
+
 void DeathCounter::AddSources(CreatedEvent data)
 {
-	binfo("AddSource: %s - %d", data.SourceName.toStdString().c_str(), data.eventtype);
 	ui->combo_obs_tex_source->addItem(data.SourceName,data.id);
 }
 
 void DeathCounter::RemoveSource(RemovedEvent data)
 {
 	int index = ui->combo_obs_tex_source->findText(data.SourceName, Qt::MatchContains);
-	binfo("[DeathCounter::Remove Source]: %s", data.id.toStdString().c_str());
 	ui->combo_obs_tex_source->removeItem(index);
 }
 
@@ -135,13 +166,14 @@ void DeathCounter::RenameSources(RenamedEvent data)
 {
 	int index = ui->combo_obs_tex_source->findText(data.prev_name, Qt::MatchContains);
 
-	binfo("[DeathCounter::Renamed Source]: %d", index);
 
 	ui->combo_obs_tex_source->setItemText(index, ui->combo_obs_tex_source->itemText(index).replace(data.prev_name, data.new_name));
 }
 
 void DeathCounter::OBSFrontendExit() {
 	ShouldStop = true;
+	QString itemtext = ui->combo_obs_tex_source->itemText(ui->combo_obs_tex_source->currentIndex());
+    obs_data_set_string(data, "SelectedSource",itemtext.toStdString().c_str());
 }
 
 void DeathCounter::SetSourceProperty(QString string, QString property, QString value)
@@ -153,4 +185,46 @@ void DeathCounter::SetSourceProperty(QString string, QString property, QString v
     OBSDataAutoRelease source_data = obs_source_get_settings(obs_source);
 	obs_data_set_string(source_data, property.toStdString().c_str(), value.toStdString().c_str());
 	obs_source_update(obs_source, source_data);
+}
+
+void DeathCounter::closeEvent(QCloseEvent *event) {
+
+    QString currentitemtext = ui->combo_obs_tex_source->itemText(ui->combo_obs_tex_source->currentIndex());
+	QString old = obs_data_get_string(data, "SelectedSource");
+
+    if (currentitemtext == old) {
+		return;
+	};
+
+    QMessageBox::StandardButton resBtn = QMessageBox::question(
+		this, "Settings Changed", "You dont want to Save your Changes?",
+		QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,
+		QMessageBox::Yes);
+
+    switch (resBtn) {
+    case QMessageBox::Yes:
+	    SaveSettings();
+	    event->accept();
+	    break;
+    case QMessageBox::No:
+	    event->accept();
+	    break;
+    case QMessageBox::Cancel:
+	    event->ignore();
+	    break;
+    default:
+	    /* If somehow the dialog fails to show, just default to
+		 * saving the settings. */
+	    Accepted();
+	    break;
+    }
+}
+
+void DeathCounter::Accepted() {
+	SaveSettings();
+	this->setVisible(false);
+}
+
+void DeathCounter::Rejected() {
+	this->setVisible(false);
 }
